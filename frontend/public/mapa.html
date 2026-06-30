@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { width: 100%; height: 100vh; overflow: hidden; }
+    #map { width: 100%; height: 100vh; }
+    .label-ponto {
+      background: #2E7D32; color: #fff;
+      padding: 4px 10px; border-radius: 12px;
+      font: bold 12px/1.4 sans-serif;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,.35);
+      position: relative; display: inline-block;
+    }
+    .label-ponto::after {
+      content: '';
+      position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%);
+      border: 6px solid transparent; border-top-color: #2E7D32; border-bottom: none;
+    }
+    #info-rota {
+      position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+      background: rgba(255,255,255,0.95);
+      border: 1px solid #e0e0e0;
+      border-radius: 20px;
+      padding: 6px 18px;
+      font: 600 13px/1.5 sans-serif;
+      color: #2E7D32;
+      z-index: 1000;
+      pointer-events: none;
+      display: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,.15);
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="info-rota"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    var CENTRO_PADRAO = [-23.0789, -52.4647];
+
+    var params = new URLSearchParams(window.location.search);
+    var raw    = params.get('pontos');
+    var pontos = raw ? JSON.parse(decodeURIComponent(raw)) : [];
+    var centro = pontos.length > 0 ? [pontos[0].lat, pontos[0].lng] : CENTRO_PADRAO;
+
+    var map = L.map('map').setView(centro, 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+
+    var routeLayer = null;
+    var infoEl = document.getElementById('info-rota');
+
+    function mostrarDistancia(km) {
+      infoEl.textContent = '📍 ' + pontos.length + ' pontos  ·  ' + km.toFixed(1) + ' km pela rota';
+      infoEl.style.display = 'block';
+    }
+
+    function criarIcone(nome) {
+      return L.divIcon({
+        className: '',
+        html: '<div class="label-ponto">' + nome + '</div>',
+        iconAnchor: [0, 28],
+        iconSize: null,
+      });
+    }
+
+    // Marcadores com labels
+    pontos.forEach(function(p, i) {
+      var nome = p.nome || ('Ponto ' + (i + 1));
+      L.marker([p.lat, p.lng], { icon: criarIcone(nome) })
+        .addTo(map)
+        .bindPopup('<strong>' + nome + '</strong><br>' +
+          Number(p.lat).toFixed(6) + ', ' + Number(p.lng).toFixed(6));
+    });
+
+    // Rota pelas ruas via OSRM
+    function buscarRota(pts) {
+      if (pts.length < 2) return;
+      var coords = pts.map(function(p) { return p.lng + ',' + p.lat; }).join(';');
+      var url = 'https://router.project-osrm.org/route/v1/driving/' + coords +
+                '?overview=full&geometries=geojson';
+
+      fetch(url)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (!data.routes || !data.routes.length) { desenharReta(pts); return; }
+          if (routeLayer) map.removeLayer(routeLayer);
+          var latlngs = data.routes[0].geometry.coordinates.map(function(c) { return [c[1], c[0]]; });
+          routeLayer = L.polyline(latlngs, { color: '#2E7D32', weight: 4, opacity: 0.85 }).addTo(map);
+          map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
+          mostrarDistancia(data.routes[0].distance / 1000);
+        })
+        .catch(function() { desenharReta(pts); });
+    }
+
+    function desenharReta(pts) {
+      if (routeLayer) map.removeLayer(routeLayer);
+      var latlngs = pts.map(function(p) { return [p.lat, p.lng]; });
+      routeLayer = L.polyline(latlngs, { color: '#2E7D32', weight: 4, dashArray: '8 6' }).addTo(map);
+      map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
+    }
+
+    if (pontos.length >= 2) buscarRota(pontos);
+  </script>
+</body>
+</html>

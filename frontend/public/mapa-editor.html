@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { width: 100%; height: 100vh; overflow: hidden; cursor: crosshair; }
+    #map { width: 100%; height: 100vh; }
+    .label-ponto {
+      background: #2E7D32; color: #fff;
+      padding: 4px 10px; border-radius: 12px;
+      font: bold 12px/1.4 sans-serif;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,.35);
+      position: relative; display: inline-block;
+      cursor: default;
+    }
+    .label-ponto::after {
+      content: '';
+      position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%);
+      border: 6px solid transparent; border-top-color: #2E7D32; border-bottom: none;
+    }
+    #status {
+      position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+      background: rgba(46,125,50,0.92); color: #fff;
+      padding: 5px 14px; border-radius: 20px;
+      font: 13px sans-serif; z-index: 1000; pointer-events: none;
+      opacity: 0; transition: opacity .3s;
+    }
+    #status.visible { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="status">Calculando rota...</div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    var CENTRO = [-23.0789, -52.4647];
+    var map = L.map('map').setView(CENTRO, 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+
+    var markers    = [];
+    var routeLayer = null;
+    var statusEl   = document.getElementById('status');
+
+    function toast(msg) {
+      statusEl.textContent = msg;
+      statusEl.classList.add('visible');
+      setTimeout(function() { statusEl.classList.remove('visible'); }, 2200);
+    }
+
+    function criarIcone(nome) {
+      return L.divIcon({
+        className: '',
+        html: '<div class="label-ponto">' + nome + '</div>',
+        iconAnchor: [0, 28],
+        iconSize: null,
+      });
+    }
+
+    function desenharMarcadores(pontos) {
+      markers.forEach(function(m) { m.remove(); });
+      markers = [];
+      pontos.forEach(function(p, i) {
+        var nome = p.nome || ('Ponto ' + (i + 1));
+        var m = L.marker([p.lat, p.lng], { icon: criarIcone(nome) }).addTo(map);
+        m.bindPopup('<strong>' + nome + '</strong><br>' +
+          Number(p.lat).toFixed(6) + ', ' + Number(p.lng).toFixed(6));
+        markers.push(m);
+      });
+    }
+
+    function desenharReta(pontos) {
+      if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
+      if (pontos.length >= 2) {
+        var latlngs = pontos.map(function(p) { return [p.lat, p.lng]; });
+        routeLayer = L.polyline(latlngs, { color: '#2E7D32', weight: 3, dashArray: '8 6' }).addTo(map);
+      }
+    }
+
+    // Haversine: distância em linha reta entre dois pontos, como fallback
+    function haversineKm(p1, p2) {
+      var R = 6371;
+      var dLat = (p2.lat - p1.lat) * Math.PI / 180;
+      var dLng = (p2.lng - p1.lng) * Math.PI / 180;
+      var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(p1.lat * Math.PI / 180) * Math.cos(p2.lat * Math.PI / 180) *
+              Math.sin(dLng/2) * Math.sin(dLng/2);
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function distanciaSequencial(pontos) {
+      var total = 0;
+      for (var i = 0; i < pontos.length - 1; i++) total += haversineKm(pontos[i], pontos[i+1]);
+      return total;
+    }
+
+    function enviarDistancia(km) {
+      window.parent.postMessage({ type: 'distanciaCalculada', km: Math.round(km * 10) / 10 }, '*');
+    }
+
+    function buscarRota(pontos) {
+      if (pontos.length < 2) { desenharReta(pontos); return; }
+      toast('Calculando rota pelas ruas...');
+      var coords = pontos.map(function(p) { return p.lng + ',' + p.lat; }).join(';');
+      fetch('https://router.project-osrm.org/route/v1/driving/' + coords +
+            '?overview=full&geometries=geojson')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (!data.routes || !data.routes.length) {
+            desenharReta(pontos);
+            enviarDistancia(distanciaSequencial(pontos));
+            return;
+          }
+          if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
+          var latlngs = data.routes[0].geometry.coordinates.map(function(c) { return [c[1], c[0]]; });
+          routeLayer = L.polyline(latlngs, { color: '#2E7D32', weight: 4, opacity: 0.85 }).addTo(map);
+          // OSRM retorna distância em metros — convertemos para km e mandamos pro formulário
+          var km = data.routes[0].distance / 1000;
+          enviarDistancia(km);
+          toast('Rota calculada ✓ ' + (Math.round(km * 10) / 10) + ' km');
+        })
+        .catch(function() {
+          desenharReta(pontos);
+          // Sem internet: usa Haversine como estimativa
+          enviarDistancia(distanciaSequencial(pontos));
+          toast('Sem conexão — rota direta');
+        });
+    }
+
+    function renderPontos(pontos) {
+      desenharMarcadores(pontos);
+      buscarRota(pontos);
+      if (pontos.length > 0) {
+        map.setView([pontos[pontos.length - 1].lat, pontos[pontos.length - 1].lng], map.getZoom());
+      }
+    }
+
+    map.on('click', function(e) {
+      window.parent.postMessage({ type: 'mapaClick', lat: e.latlng.lat, lng: e.latlng.lng }, '*');
+    });
+
+    window.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'atualizarPontos') renderPontos(e.data.pontos);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+export { api } from './api'
+export { authService } from './authService'
+export { default as ColetaService } from './ColetaService'
+export { default as MotoristaService } from './MotoristaService'
+export { default as ResiduoService } from './ResiduoService'
+export { default as RotaService } from './RotaService'
+export { default as VeiculoService } from './VeiculoService'

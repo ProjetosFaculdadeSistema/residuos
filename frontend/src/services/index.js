@@ -1,0 +1,7 @@
+export { api } from './api'
+export { authService } from './authService'
+export { ResiduoService } from './ResiduoService'
+export { MotoristaService } from './MotoristaService'
+export { VeiculoService } from './VeiculoService'
+export { RotaService } from './RotaService'
+export { ColetaService } from './ColetaService'
