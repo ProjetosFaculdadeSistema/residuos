@@ -1,6 +1,21 @@
-# Sistema de Gerenciamento de Resíduos Sólidos
+<div align="center">
 
-Sistema desenvolvido como Projeto Integrador da disciplina de Programação de Software e Aplicativos I (PSA I) do IFPR — Bacharelado em Sistemas de Informação.
+# ♻️ Sistema de Gerenciamento de Resíduos Sólidos
+
+Aplicação web full-stack para gerenciamento da coleta de resíduos sólidos urbanos.
+
+[![Java](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.3-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vite.dev/)
+[![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-3-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![JWT](https://img.shields.io/badge/JWT-Auth-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)](https://jwt.io/)
+[![Cloudinary](https://img.shields.io/badge/Cloudinary-Upload-3448C5?style=for-the-badge&logo=cloudinary&logoColor=white)](https://cloudinary.com/)
+
+> Projeto Integrador — PSA I · IFPR · Bacharelado em Sistemas de Informação
+
+</div>
 
 ---
 
