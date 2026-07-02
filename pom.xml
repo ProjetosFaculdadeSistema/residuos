@@ -10,8 +10,8 @@
     </parent>
     <groupId>br.edu.ifpr.bsi</groupId>
     <artifactId>residuos</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <packaging>war</packaging>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
     <name>residuos</name>
     <description>Sistema de Gerenciamento de Residuos Solidos</description>
     <properties>
@@ -41,11 +41,6 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-tomcat</artifactId>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

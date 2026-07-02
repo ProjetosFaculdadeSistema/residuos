@@ -1,6 +1,7 @@
 package br.edu.ifpr.bsi.residuos.security;
 
 import br.edu.ifpr.bsi.residuos.services.UsuarioService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -27,6 +28,10 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final UsuarioService usuarioService;
+
+    // origens permitidas vem do application-*.properties (local ou deploy)
+    @Value("${cors.allowed-origins}")
+    private List<String> allowedOrigins;
 
     public SecurityConfig(JwtAuthFilter jwtAuthFilter, UsuarioService usuarioService) {
         this.jwtAuthFilter = jwtAuthFilter;
@@ -60,8 +65,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // portas do Vite (5173) e CRA (3000) liberadas para desenvolvimento local
-        config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173"));
+        // origens configuraveis por ambiente (local: portas do Vite/CRA; deploy: URL do Render)
+        config.setAllowedOrigins(allowedOrigins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

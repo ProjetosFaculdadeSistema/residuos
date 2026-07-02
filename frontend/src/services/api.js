@@ -5,7 +5,8 @@ import { logout } from '../store/authSlice'
 // instância centralizada do axios — todas as chamadas partem daqui
 // assim qualquer mudança de baseURL ou timeout afeta o projeto todo
 export const api = axios.create({
-  baseURL: 'http://localhost:8080',
+  // em producao o Render injeta VITE_API_URL; localmente cai no localhost
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
